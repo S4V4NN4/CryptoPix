@@ -6,9 +6,9 @@
 
 using namespace std;
 
-const char pngN[] = { -119, 80, 78, 71, 13, 10, 26, 10 };
-const char pngK[] = {  };
-const char jpgN[] = { -1, -40, -1, -32, 0, 16, 74, 70, 73, 70, 0 };
+const char pngN[] = { -119, 80, 78, 71, 13, 10, 26, 10 }; // начало PNG - 8 байт
+const char pngK[] = { 0, 0, 0, 0, 73, 69, 78, 68, -82, 66, 96, -126 }; // конец PNG - 12 байт
+const char jpgN[] = { -1, -40, -1, -32 };//, 0, 16, 74, 70, 73, 70, 0 }; // начало JPEG/JPG
 int key[4];
 
 
@@ -20,120 +20,115 @@ int randd()
 
 
 
-void createKey(int k[])
+void createKey(int key[])
 {
     for (int i = 0; i < 4; i++)
     {
-        k[i] = randd();
+        key[i] = randd();
     }
 }
 
-
-
-char* rassh(string name)
-{
-    char* rassh = new char[5];
-    int j = 0;
-    for (int i = name.length() - 4; i < name.length(); i++)
-    {
-        rassh[j] = name[i];
-        j = j + 1;
-    }
-    rassh[4] = '\0';
-    return rassh;
-}
-
-
-void encrypt(vector<char>& v, string name)
-{
-    
-
-
-}
-
-
-bool sravnStr(char* ras, const char* ch)
+bool sravnStr(char* sr, const char* ch)
 {
     for (int i = 0; i < 4; i++)
     {
-        if (ras[i] != ch[i]) { return 0; }
+        if (sr[i] != ch[i]) { return 0; }
     }
     return 1;
 }
-void saveFile(vector<char>& v, string name)
+
+
+int extFile(string name)
 {
-    int razzm;
-    char* rasssh = rassh(name);
-    if (sravnStr(rasssh, ".png"))
+    char* ext = new char[5];
+    int j = 0;
+    for (int i = name.length() - 4; i < name.length(); i++)
     {
-        razzm = 1;
+        ext[j] = name[i];
+        j = j + 1;
     }
-    else if (sravnStr(rasssh, ".jpg"))
+    ext[4] = '\0';
+    if (sravnStr(ext, ".png"))
     {
-        razzm = 2;
+        delete[] ext;
+        return 1;
     }
-    else if (sravnStr(rasssh, "jpeg"))
+    else if (sravnStr(ext, ".jpg"))
     {
-        razzm = 0;
+        delete[] ext;
+        return 2;
+    }
+    else if (sravnStr(ext, "jpeg"))
+    {
+        delete[] ext;
+        return 3;
     }
     else
     {
-        cout << ":(";
+        cout << ":( 1";
+        delete[] ext;
+        return -1;
+    }
+}
+
+
+void plusRas(char*& buff, string name, const char* ch, int j)
+{
+    char mod[] = "_modified";
+    for (int i = 0; i < name.size() - 4; i++)
+    {
+        buff[i] = name[i];
+    }
+    for (int i = 0; i < 9; i++)
+    {
+        buff[name.length() - 4 + i] = mod[i];
+    }
+    for (int i = 0; i < 4 + j; i++)
+    {
+        buff[name.length() - 4 + 9 + i] = ch[i];
+    }
+}
+void newName(string name, string& saveFilePath)
+{
+    char* buff = new char[name.length() + 10];
+    int ext = extFile(name);
+    if (ext == -1)
+    {
+        cout << ":( 2";
         return;
     }
-
-
-    char* buff = new char[name.length() + 9];
-    char mod[] = "_modified";
-    if (razzm)
+    else if (ext == 1)
     {
-        for (int i = 0; i < name.length() - 4; i++)
-        {
-            buff[i] = name[i];
-        }
-        for (int i = 0; i < 9; i++)
-        {
-            buff[name.length() - 4 + i] = mod[i];
-        }
-        for (int i = 0; i < 4; i++)
-        {
-            buff[name.length() - 4 + 9 + i] = rasssh[i];
-        }
+        plusRas(buff, name, ".png", 0);
+    }
+    else if (ext == 2)
+    {
+        plusRas(buff, name, ".jpg", 0);
+    }
+    else if (ext == 3)
+    {
+        plusRas(buff, name, ".jpeg", 1);
     }
     else
     {
-        for (int i = 0; i < name.length() - 5; i++)
-        {
-            buff[i] = name[i];
-        }
-        for (int i = 0; i < 9; i++)
-        {
-            buff[name.length() - 5 + i] = mod[i];
-        }
-        buff[name.length() - 5 + 9] = '.';
-        for (int i = 0; i < 4; i++)
-        {
-            buff[name.length() - 5 + 10 + i] = rasssh[i];
-        }
+        cout << ":( 3";
+        return;
     }
     buff[name.length() + 9] = '\0';
-
-    string saveFilePath = buff;
-
-
-    // cout << '\n' << buff << '\n';
-
+    saveFilePath = buff;
+    delete[] buff;
+}
+void saveInFile(vector<char>& v, string name)
+{
+    string saveFilePath;
+    newName(name, saveFilePath);
 
     ofstream saveFile(saveFilePath, ios::binary);
     if (!saveFile.is_open())
     {
         cout << "Ошибка при открытии файла: " << saveFilePath << "\n";
-        delete[] buff;
-        delete[] rasssh;
         return;
     }
-
-
     for (const char& ch : v)
     {
         saveFile.put(ch);
@@ -141,27 +136,127 @@ void saveFile(vector<char>& v, string name)
 
 
     saveFile.close();
-    delete[] buff;
-    delete[] rasssh;
-}
-
-void decrypt(vector<char>& v)
-{
-
-
-
-
-
 }
 
 
 
-void dec_encFunc(vector<char>& v, const int key[], string name)
+void Enc(vector<char>& v, string name)
 {
-    for (int i = 0; i < v.size(); ++i)
+    int ext = extFile(name);
+    if (ext == -1)
     {
-        v[i] = int(v[i]) ^ key[i % 4];
+        cout << ":( 4";
+        return;
     }
+    else if (ext == 1)
+    {
+        int j = 0;
+        for (int i = 3; i >= 0; i--)
+        {
+            key[j] = v[v.size() - 13 - i];
+            j++;
+            v.erase(v.begin() + v.size() - 13 - i);
+        }
+    }
+    else if (ext == 2 || ext == 3)
+    {
+        for (int i = 0; i < 4; i++)
+        {
+            v.push_back(key[i]);
+        }
+    }
+    else
+    {
+        cout << ":( 5";
+        return;
+    }
+}
+
+
+void Dec(vector<char>& v, string name)
+{
+    int ext = extFile(name);
+    if (ext == -1)
+    {
+        cout << ":( 4";
+        return;
+    }
+    else if (ext == 1)
+    {
+        for (int i = 0; i < 4; i++)
+        {
+            v.insert(v.begin() + v.size() - 12, key[i]);
+        }
+    }
+    else if (ext == 2 || ext == 3)
+    {
+        for (int i = 0; i < 4; i++)
+        {
+            v.push_back(key[i]);
+        }
+    }
+    else
+    {
+        cout << ":( 5";
+        return;
+    }
+}
+
+
+void returnExt(vector<char>& v, string name)
+{
+    int ext = extFile(name);
+    if (ext == -1)
+    {
+        cout << ":( 4";
+        return;
+    }
+    else if (ext == 1)
+    {
+        for (int i = 0; i < 8; i++)
+        {
+            v[i] = pngN[i];
+        }
+        int j = 0;
+        for (int i = 12; i > 0; i--)
+        {
+            v[v.size() - i] = pngK[j];
+            j++;
+        }
+    }
+    else if (ext == 2 || ext == 3)
+    {
+        for (int i = 0; i < 4; i++)
+        {
+            v[i] = jpgN[i];
+        }
+    }
+    else
+    {
+        cout << ":( 5";
+        return;
+    }
+}
+void DecEnc(vector<char>& v, int key[], string name, bool enc)
+{
+    if (enc)
+    {
+        Enc(v, name);
+        for (int i = 0; i < v.size(); ++i)
+        {
+            v[i] = int(v[i]) ^ key[i % 4];
+        }
+    }
+    else
+    {
+        createKey(key);
+        for (int i = 0; i < v.size(); ++i)
+        {
+            v[i] = int(v[i]) ^ key[i % 4];
+        }
+        Dec(v, name);
+    }
+    returnExt(v, name);
 }
 
 
@@ -173,13 +268,7 @@ int main()
 {
     srand(time(nullptr));
     setlocale(LC_ALL, "russian");
-    string imageFilePath = "D:\\logo.png";
-    char* rasssh;
-    rasssh = rassh(imageFilePath);
-    cout << rasssh << '\n';
-
-    // std::cin >> imageFilePath;
-    // cout << imageFilePath << '\n';
+    string imageFilePath = "D:/logo_modified.png"; // "D:/logo_modified.png"
 
     std::ifstream imageFile(imageFilePath, ios::binary);
     if (!imageFile.is_open()) 
@@ -197,35 +286,26 @@ int main()
     }
 
 
-    /*
+    DecEnc(Img, key, imageFilePath, 1);
+
+
+
+
     // Выводим бинарные данные изображения в консоль
-    for (const char& ch : Img) 
+    //for (const char& ch : Img) 
+    //{
+    //    cout << static_cast<int>(ch) << " "; // Выводим байты как целые числа
+    //}
+    //cout << "\n";
+    //cout << "Размер изображения: " << Img.size() << " байт" << "\n";
+    for (int i = 0; i < 4; i++)
     {
-        cout << static_cast<int>(ch) << " "; // Выводим байты как целые числа
+        cout << key[i] << " ";
     }
-    cout << "\n";
-    cout << "Размер изображения: " << Img.size() << " байт" << "\n";
-    */
 
-
-
-
-
-    createKey(key);
-    vector<char> Img1 = { 123, 4, -5, 12, 90, -45, 1, 0, 4, 1, 9, 45, 32 };
-    for (int i = 0; i < Img1.size(); ++i) { cout << Img1[i] << " "; }
-    cout << '\n';
-    dec_encFunc(Img1, key);
-    for (int i = 0; i < Img1.size(); ++i) { cout << Img1[i] << " "; }
-
-    cout << '\n';
-    for (int i = 0; i < 8; ++i) { cout << pngN[i] << " "; }
 
     imageFile.close();
 
-    delete[] rasssh;
-
-    saveFile(Img, imageFilePath);
-    
+    saveInFile(Img, imageFilePath);
     return 0;
 }

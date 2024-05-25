@@ -6,9 +6,10 @@
 
 using namespace std;
 
+
 const char pngN[] = { -119, 80, 78, 71, 13, 10, 26, 10 }; // начало PNG - 8 байт
 const char pngK[] = { 0, 0, 0, 0, 73, 69, 78, 68, -82, 66, 96, -126 }; // конец PNG - 12 байт
-const char jpgN[] = { -1, -40, -1, -32 };//, 0, 16, 74, 70, 73, 70, 0 }; // начало JPEG/JPG
+const char jpgN[] = { -1, -40, -1, -32 }; // , 0, 16, 74, 70, 73, 70, 0 }; // начало JPEG/JPG
 int key[4];
 
 
@@ -19,14 +20,14 @@ int randd()
 }
 
 
-
-void createKey(int key[])
+void createKey()
 {
     for (int i = 0; i < 4; i++)
     {
         key[i] = randd();
     }
 }
+
 
 bool sravnStr(char* sr, const char* ch)
 {
@@ -65,11 +66,11 @@ int extFile(string name)
     }
     else
     {
-        cout << ":( 1";
         delete[] ext;
         return -1;
     }
 }
+
 
 
 void plusRas(char*& buff, string name, const char* ch, int j)
@@ -88,224 +89,319 @@ void plusRas(char*& buff, string name, const char* ch, int j)
         buff[name.length() - 4 + 9 + i] = ch[i];
     }
 }
-void newName(string name, string& saveFilePath)
+string newName(string name)
 {
+    string saveFilePath;
     char* buff = new char[name.length() + 10];
     int ext = extFile(name);
-    if (ext == -1)
+
+    switch (ext)
     {
-        cout << ":( 2";
-        return;
-    }
-    else if (ext == 1)
-    {
+    case 1:
         plusRas(buff, name, ".png", 0);
-    }
-    else if (ext == 2)
-    {
+        break;
+    case 2:
         plusRas(buff, name, ".jpg", 0);
-    }
-    else if (ext == 3)
-    {
+        break;
+    case 3:
         plusRas(buff, name, ".jpeg", 1);
+        break;
     }
-    else
-    {
-        cout << ":( 3";
-        return;
-    }
+
     buff[name.length() + 9] = '\0';
     saveFilePath = buff;
     delete[] buff;
+    return saveFilePath;
 }
-void saveInFile(vector<char>& v, string name)
+void saveInFile(vector<char>& img, string name)
 {
-    string saveFilePath;
-    newName(name, saveFilePath);
+    string saveFilePath = newName(name);
 
     ofstream saveFile(saveFilePath, ios::binary);
     if (!saveFile.is_open())
     {
-        cout << "Ошибка при открытии файла: " << saveFilePath << "\n";
+        cout << "Error opening file: " << saveFilePath << ".\n";
         return;
     }
-    for (const char& ch : v)
+    for (const char& ch : img)
     {
         saveFile.put(ch);
     }
-
 
     saveFile.close();
 }
 
 
-
-void Enc(vector<char>& v, string name)
+void keyInImg(vector<char>& img, int ext)
 {
-    int ext = extFile(name);
-    if (ext == -1)
+    if (ext == 1)
     {
-        cout << ":( 4";
-        return;
-    }
-    else if (ext == 1)
-    {
-        int j = 0;
-        for (int i = 3; i >= 0; i--)
+        for (int i = 0; i < 4; i++)
         {
-            key[j] = v[v.size() - 13 - i];
-            j++;
-            v.erase(v.begin() + v.size() - 13 - i);
+            img.insert(img.begin() + img.size() - 12, key[i]);
         }
     }
     else if (ext == 2 || ext == 3)
     {
         for (int i = 0; i < 4; i++)
         {
-            v.push_back(key[i]);
+            img.push_back(key[i]);
         }
-    }
-    else
-    {
-        cout << ":( 5";
-        return;
     }
 }
-
-
-void Dec(vector<char>& v, string name)
+void keyInFile()
 {
-    int ext = extFile(name);
-    if (ext == -1)
+    cout << "Enter the path where to save the key. (with file name and extension)\n>>>";
+    string keyFile; cin >> keyFile;
+    ofstream saveKey(keyFile);
+    if (!saveKey.is_open())
     {
-        cout << ":( 4";
+        cout << "Key error.\n";
         return;
     }
-    else if (ext == 1)
+    for (int i = 0; i < 4; i++)
     {
-        for (int i = 0; i < 4; i++)
-        {
-            v.insert(v.begin() + v.size() - 12, key[i]);
-        }
-    }
-    else if (ext == 2 || ext == 3)
-    {
-        for (int i = 0; i < 4; i++)
-        {
-            v.push_back(key[i]);
-        }
-    }
-    else
-    {
-        cout << ":( 5";
-        return;
+        saveKey << key[i] << " ";
     }
 }
-
-
-void returnExt(vector<char>& v, string name)
+void keyInConsole()
 {
-    int ext = extFile(name);
-    if (ext == -1)
-    {
-        cout << ":( 4";
-        return;
-    }
-    else if (ext == 1)
-    {
-        for (int i = 0; i < 8; i++)
-        {
-            v[i] = pngN[i];
-        }
-        int j = 0;
-        for (int i = 12; i > 0; i--)
-        {
-            v[v.size() - i] = pngK[j];
-            j++;
-        }
-    }
-    else if (ext == 2 || ext == 3)
-    {
-        for (int i = 0; i < 4; i++)
-        {
-            v[i] = jpgN[i];
-        }
-    }
-    else
-    {
-        cout << ":( 5";
-        return;
-    }
-}
-void DecEnc(vector<char>& v, int key[], string name, bool enc)
-{
-    if (enc)
-    {
-        Enc(v, name);
-        for (int i = 0; i < v.size(); ++i)
-        {
-            v[i] = int(v[i]) ^ key[i % 4];
-        }
-    }
-    else
-    {
-        createKey(key);
-        for (int i = 0; i < v.size(); ++i)
-        {
-            v[i] = int(v[i]) ^ key[i % 4];
-        }
-        Dec(v, name);
-    }
-    returnExt(v, name);
-}
-
-
-
-
-
-
-int main() 
-{
-    srand(time(nullptr));
-    setlocale(LC_ALL, "russian");
-    string imageFilePath = "D:/logo_modified.png"; // "D:/logo_modified.png"
-
-    std::ifstream imageFile(imageFilePath, ios::binary);
-    if (!imageFile.is_open()) 
-    {
-        cout << "Ошибка при открытии файла: " << imageFilePath << "\n";
-        return 1;
-    }
-
-
-    vector<char> Img;
-    char ch;
-    while (imageFile.get(ch)) 
-    {
-        Img.push_back(ch);
-    }
-
-
-    DecEnc(Img, key, imageFilePath, 1);
-
-
-
-
-    // Выводим бинарные данные изображения в консоль
-    //for (const char& ch : Img) 
-    //{
-    //    cout << static_cast<int>(ch) << " "; // Выводим байты как целые числа
-    //}
-    //cout << "\n";
-    //cout << "Размер изображения: " << Img.size() << " байт" << "\n";
     for (int i = 0; i < 4; i++)
     {
         cout << key[i] << " ";
     }
+    cout << "\n";
+}
 
+void keyFromImg(vector<char>& img, int ext)
+{
+    if (ext == 1)
+    {
+        int j = 0;
+        for (int i = 3; i >= 0; i--)
+        {
+            key[j] = img[img.size() - 13 - i];
+            j++;
+            img.erase(img.begin() + img.size() - 13 - i);
+        }
+    }
+    else if (ext == 2 || ext == 3)
+    {
+        int j = 3;
+        for (int i = 0; i < 4; i++)
+        {
+            key[j] = img[img.size() - 1];
+            img.pop_back();
+            j--;
+        }
+    }
+}
+void keyFromFile()
+{
+    cout << "Enter the path to the file with key. (with file name and extension)\n>>>";
+    string keyFile; cin >> keyFile;
+    ifstream file(keyFile);
+    if (!file.is_open()) 
+    {
+        cout << "Error opening: " << keyFile << ".\n";
+        return;
+    }
+
+    for (int i = 0; i < 4; i++) 
+    {
+        if (!(file >> key[i])) 
+        {
+            cout << "Error reading: " << keyFile << ".\n";
+            return;
+        }
+    }
+}
+void keyFromConsole()
+{
+    cout << "Enter the key.\n>>>";
+    for (int i = 0; i < 4; i++)
+    {
+        cin >> key[i];
+    }
+}
+
+
+void saveKey(vector<char>& img, int ext)
+{
+    cout << "Save key in Image, in txt-file, or print to console? (1 - Img, 2 - txt, 3 - console)\n";
+
+    int save;
+    do
+    {
+        cout << ">>>"; cin >> save;
+        switch (save)
+        {
+        case 1:
+            keyInImg(img, ext);
+            break;
+        case 2:
+            keyInFile();
+            break;
+        case 3:
+            keyInConsole();
+            break;
+        default:
+            cout << "Input Error.\n";
+            break;
+        }
+    } while (save >= 3 && save <= 1);
+}
+void getKey(vector<char>& img, int ext)
+{
+    cout << "Get key from Image, from txt-file, or from console? (1 - Img, 2 - txt, 3 - console)\n";
+    int save;
+    do
+    {
+        cout << ">>>"; cin >> save;
+        switch (save)
+        {
+        case 1:
+            keyFromImg(img, ext);
+            break;
+        case 2:
+            keyFromFile();
+            break;
+        case 3:
+            keyFromConsole();
+            break;
+        default:
+            cout << "Input Error.\n";
+            break;
+        }
+    } while (save >= 3 && save <= 1);
+}
+
+
+void returnExt(vector<char>& img, int ext)
+{
+    if (ext == 1)
+    {
+        for (int i = 0; i < 8; i++)
+        {
+            img[i] = pngN[i];
+        }
+        int j = 0;
+        for (int i = 12; i > 0; i--)
+        {
+            img[img.size() - i] = pngK[j];
+            j++;
+        }
+    }
+    else if (ext == 2 || ext == 3)
+    {
+        for (int i = 0; i < 4; i++)
+        {
+            img[i] = jpgN[i];
+        }
+    }
+}
+
+
+void Crypt(vector<char>& img)
+{
+    for (int i = 0; i < img.size(); ++i)
+    {
+        img[i] = int(img[i]) ^ key[i % 4];
+    }
+}
+
+
+void Decrypt(vector<char>& img, int ext)
+{
+    getKey(img, ext);
+    Crypt(img);
+}
+void Encrypt(vector<char>& img, int ext)
+{
+    srand(time(nullptr));
+    createKey();
+    Crypt(img);
+    saveKey(img, ext);
+}
+
+
+void DecEnc(vector<char>& img, string name)
+{
+    int ext = extFile(name);
+
+    cout << "Decrypt - 1;\nEncrypt - 2;\n>>>";
+    int dec;
+    do
+    {
+        cin >> dec;
+    } while (dec != 1 && dec != 2);
+
+    if (dec == 1)
+    {
+        Decrypt(img, ext);
+    }
+    else
+    {
+        Encrypt(img, ext);
+    }
+
+    returnExt(img, ext);
+}
+
+
+int mainFunc()
+{
+    cout << "Enter the path to the Image: (with file name and extension)\nPossible extensions at the moment: PNG, JPG, JPEG.\n>>>";
+    string imageFilePath;   cin >> imageFilePath;
+    
+    if (extFile(imageFilePath) == -1)
+    {
+        cout << "invalid file extension.";
+        return 1;
+    }
+
+    ifstream imageFile(imageFilePath, ios::binary);
+    if (!imageFile.is_open())
+    {
+        cout << "Error opening file: " << imageFilePath << ".\n";
+        return 1;
+    }
+
+    vector<char> img;
+    char ch;
+    while (imageFile.get(ch))
+    {
+        img.push_back(ch);
+    }
+
+    
+    DecEnc(img, imageFilePath);
 
     imageFile.close();
 
-    saveInFile(Img, imageFilePath);
+    saveInFile(img, imageFilePath);
+    return 0;
+}
+
+
+void vivod(vector<char>& img)
+// Выводим бинарные данные изображения в консоль
+{
+    for (const char& ch : img)
+    {
+        cout << static_cast<int>(ch) << " "; // Выводим байты как целые числа
+    }
+    cout << "\n";
+    cout << "Размер изображения: " << img.size() << " байт" << "\n";
+}
+
+
+int main() 
+{
+    if (mainFunc())
+    {
+        return 1;
+    }
+
     return 0;
 }

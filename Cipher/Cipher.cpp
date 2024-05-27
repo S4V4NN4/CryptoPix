@@ -64,6 +64,11 @@ int extFile(string name)
         delete[] ext;
         return 3;
     }
+    else if (sravnStr(ext, ".txt"))
+    {
+        delete[] ext;
+        return -2;
+    }
     else
     {
         delete[] ext;
@@ -75,18 +80,18 @@ int extFile(string name)
 
 void plusRas(char*& buff, string name, const char* ch, int j)
 {
-    char mod[] = "_modified";
+    char mod[] = "_crypted";
     for (int i = 0; i < name.size() - 4; i++)
     {
         buff[i] = name[i];
     }
-    for (int i = 0; i < 9; i++)
+    for (int i = 0; i < 8; i++)
     {
         buff[name.length() - 4 + i] = mod[i];
     }
     for (int i = 0; i < 4 + j; i++)
     {
-        buff[name.length() - 4 + 9 + i] = ch[i];
+        buff[name.length() - 4 + 8 + i] = ch[i];
     }
 }
 string newName(string name)
@@ -108,27 +113,10 @@ string newName(string name)
         break;
     }
 
-    buff[name.length() + 9] = '\0';
+    buff[name.length() + 8] = '\0';
     saveFilePath = buff;
     delete[] buff;
     return saveFilePath;
-}
-void saveInFile(vector<char>& img, string name)
-{
-    string saveFilePath = newName(name);
-
-    ofstream saveFile(saveFilePath, ios::binary);
-    if (!saveFile.is_open())
-    {
-        cout << "Error opening file: " << saveFilePath << ".\n";
-        return;
-    }
-    for (const char& ch : img)
-    {
-        saveFile.put(ch);
-    }
-
-    saveFile.close();
 }
 
 
@@ -151,8 +139,18 @@ void keyInImg(vector<char>& img, int ext)
 }
 void keyInFile()
 {
-    cout << "Enter the path where to save the key. (with file name and extension)\n>>>";
-    string keyFile; cin >> keyFile;
+    string keyFile;
+    while (true)
+    {
+        cout << "Enter the path where to save the key. (with file name and extension)\n>>>";
+        cin >> keyFile;
+        if (extFile(keyFile) != -2)
+        {
+            cout << "\nInvalid input.\n\n";
+            continue;
+        }
+        break;
+    }
     ofstream saveKey(keyFile);
     if (!saveKey.is_open())
     {
@@ -198,12 +196,22 @@ void keyFromImg(vector<char>& img, int ext)
 }
 void keyFromFile()
 {
-    cout << "Enter the path to the file with key. (with file name and extension)\n>>>";
-    string keyFile; cin >> keyFile;
+    string keyFile;
+    while (true)
+    {
+        cout << "Enter the path to the file with key. (with file name and extension)\n>>>";
+        cin >> keyFile;
+        if (extFile(keyFile) != -2)
+        {
+            cout << "\nInvalid input.\n\n";
+            continue;
+        }
+        break;
+    }
     ifstream file(keyFile);
     if (!file.is_open()) 
     {
-        cout << "Error opening: " << keyFile << ".\n";
+        cout << "Error opening: " << keyFile << ", or the file does not exist.\n";
         return;
     }
 
@@ -329,7 +337,7 @@ void DecEnc(vector<char>& img, string name)
 {
     int ext = extFile(name);
 
-    cout << "Decrypt - 1;\nEncrypt - 2;\n>>>";
+    cout << "Decrypt or Encrypt the image? (Decrypt - 1, Encrypt - 2)\n>>>";
     int dec;
     do
     {
@@ -349,21 +357,44 @@ void DecEnc(vector<char>& img, string name)
 }
 
 
+void saveInFile(vector<char>& img, string name)
+{
+    string saveFilePath = newName(name);
+
+    ofstream saveFile(saveFilePath, ios::binary);
+    if (!saveFile.is_open())
+    {
+        cout << "Error opening file: " << saveFilePath << ".\n";
+        return;
+    }
+    for (const char& ch : img)
+    {
+        saveFile.put(ch);
+    }
+
+    saveFile.close();
+}
 int mainFunc()
 {
-    cout << "Enter the path to the Image: (with file name and extension)\nPossible extensions at the moment: PNG, JPG, JPEG.\n>>>";
-    string imageFilePath;   cin >> imageFilePath;
+    cout << "Welcome to CryptoPix!\n";
+    string imageFilePath;
     
-    if (extFile(imageFilePath) == -1)
+    while(true)
     {
-        cout << "invalid file extension.";
-        return 1;
+        cout << "Enter the path to the Image: (with file name and extension)\nPossible extensions at the moment: PNG, JPG, JPEG.\n>>>";
+        cin >> imageFilePath;
+        if (extFile(imageFilePath) < 0)
+        {
+            cout << "\nInvalid input.\n\n";
+            continue;
+        }
+        break;
     }
 
     ifstream imageFile(imageFilePath, ios::binary);
     if (!imageFile.is_open())
     {
-        cout << "Error opening file: " << imageFilePath << ".\n";
+        cout << "Error opening file: " << imageFilePath << ", or the file does not exist.\n";
         return 1;
     }
 
@@ -380,20 +411,10 @@ int mainFunc()
     imageFile.close();
 
     saveInFile(img, imageFilePath);
+    cout << "Thanks for using CryptoPix!";
     return 0;
 }
 
-
-void vivod(vector<char>& img)
-// Выводим бинарные данные изображения в консоль
-{
-    for (const char& ch : img)
-    {
-        cout << static_cast<int>(ch) << " "; // Выводим байты как целые числа
-    }
-    cout << "\n";
-    cout << "Размер изображения: " << img.size() << " байт" << "\n";
-}
 
 
 int main() 
